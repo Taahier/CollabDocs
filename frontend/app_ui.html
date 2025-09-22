@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Collaboration Platform</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .document-info {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .history-item {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #007bff;
+            border-radius: 3px;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>📄 Document Collaboration Platform</h1>
+
+    <!-- Upload Section -->
+    <div class="container">
+        <h2>📤 Upload New Document</h2>
+        <div class="form-group">
+            <label for="fileName">File Name:</label>
+            <input type="text" id="fileName" placeholder="e.g., my-document.txt">
+        </div>
+        <div class="form-group">
+            <label for="fileContent">Document Content:</label>
+            <textarea id="fileContent" placeholder="Enter your document content here..."></textarea>
+        </div>
+        <button onclick="uploadDocument()">Upload Document</button>
+        <div id="uploadResult"></div>
+    </div>
+
+    <!-- Get Document Section -->
+    <div class="container">
+        <h2>📖 Get Document</h2>
+        <div class="form-group">
+            <label for="getDocumentId">Document ID:</label>
+            <input type="text" id="getDocumentId" placeholder="e.g., doc-68a41f61">
+        </div>
+        <button onclick="getDocument()">Get Document</button>
+        <div id="getResult"></div>
+    </div>
+
+    <!-- Edit Document Section -->
+    <div class="container">
+        <h2>✏️ Edit Document</h2>
+        <div class="form-group">
+            <label for="editDocumentId">Document ID:</label>
+            <input type="text" id="editDocumentId" placeholder="e.g., doc-68a41f61">
+        </div>
+        <div class="form-group">
+            <label for="editContent">New Content:</label>
+            <textarea id="editContent" placeholder="Enter updated content..."></textarea>
+        </div>
+        <div class="form-group">
+            <label for="editedBy">Edited By:</label>
+            <input type="text" id="editedBy" placeholder="Your name">
+        </div>
+        <div class="form-group">
+            <label for="changeDescription">Change Description:</label>
+            <input type="text" id="changeDescription" placeholder="What did you change?">
+        </div>
+        <button onclick="editDocument()">Update Document</button>
+        <div id="editResult"></div>
+    </div>
+
+    <!-- Document History Section -->
+    <div class="container">
+        <h2>📚 Document History</h2>
+        <div class="form-group">
+            <label for="historyDocumentId">Document ID:</label>
+            <input type="text" id="historyDocumentId" placeholder="e.g., doc-68a41f61">
+        </div>
+        <button onclick="getHistory()">Get History</button>
+        <div id="historyResult"></div>
+    </div>
+
+    <script>
+        // Replace this with your actual API Gateway URL
+        const API_BASE_URL = 'https://9s0hyc3nof.execute-api.ap-south-1.amazonaws.com/prod';
+
+        // Upload Document Function
+        async function uploadDocument() {
+            const fileName = document.getElementById('fileName').value;
+            const fileContent = document.getElementById('fileContent').value;
+            const resultDiv = document.getElementById('uploadResult');
+
+            if (!fileName || !fileContent) {
+                resultDiv.innerHTML = '<div class="error">Please fill in both file name and content!</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading">Uploading document...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fileName: fileName,
+                        fileContent: fileContent
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>Document uploaded successfully!</strong><br>
+                            Document ID: <strong>${result.documentId}</strong><br>
+                            Edit Number: ${result.editNumber}
+                        </div>
+                    `;
+                    // Auto-fill the document ID in other sections
+                    document.getElementById('getDocumentId').value = result.documentId;
+                    document.getElementById('editDocumentId').value = result.documentId;
+                    document.getElementById('historyDocumentId').value = result.documentId;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Network error: ${error.message}</div>`;
+            }
+        }
+
+        // Get Document Function
+        async function getDocument() {
+            const documentId = document.getElementById('getDocumentId').value;
+            const resultDiv = document.getElementById('getResult');
+
+            if (!documentId) {
+                resultDiv.innerHTML = '<div class="error">Please enter a document ID!</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading">Getting document...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/${documentId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="document-info">
+                            <strong>Document Details:</strong><br>
+                            <strong>Title:</strong> ${result.title}<br>
+                            <strong>Current Edit Number:</strong> ${result.currentEditNumber}<br>
+                            <strong>Created:</strong> ${new Date(result.createdAt).toLocaleString()}<br>
+                            <strong>Last Modified:</strong> ${new Date(result.lastModified).toLocaleString()}<br>
+                            <br>
+                            <strong>Content:</strong><br>
+                            <textarea readonly style="width: 100%; height: 100px;">${result.content}</textarea>
+                        </div>
+                    `;
+                    // Auto-fill edit section with current content
+                    document.getElementById('editContent').value = result.content;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Network error: ${error.message}</div>`;
+            }
+        }
+
+        // Edit Document Function
+        async function editDocument() {
+            const documentId = document.getElementById('editDocumentId').value;
+            const content = document.getElementById('editContent').value;
+            const editedBy = document.getElementById('editedBy').value || 'Anonymous';
+            const changeDescription = document.getElementById('changeDescription').value || 'Document updated';
+            const resultDiv = document.getElementById('editResult');
+
+            if (!documentId || !content) {
+                resultDiv.innerHTML = '<div class="error">Please fill in document ID and content!</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading">Updating document...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        editedBy: editedBy,
+                        changeDescription: changeDescription
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>Document updated successfully!</strong><br>
+                            New Edit Number: <strong>${result.editNumber}</strong><br>
+                            Edited By: ${result.editedBy}<br>
+                            Updated At: ${new Date(result.editedAt).toLocaleString()}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Network error: ${error.message}</div>`;
+            }
+        }
+
+        // Get Document History Function
+        async function getHistory() {
+            const documentId = document.getElementById('historyDocumentId').value;
+            const resultDiv = document.getElementById('historyResult');
+
+            if (!documentId) {
+                resultDiv.innerHTML = '<div class="error">Please enter a document ID!</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading">Getting document history...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/${documentId}/history`);
+                const result = await response.json();
+
+                if (result.success) {
+                    let historyHtml = `
+                        <div class="document-info">
+                            <strong>Document History (${result.totalEdits} edits)</strong>
+                        </div>
+                    `;
+
+                    result.history.forEach(item => {
+                        historyHtml += `
+                            <div class="history-item">
+                                <strong>Edit #${item.editNumber}</strong> - ${new Date(item.editedAt).toLocaleString()}<br>
+                                <strong>Edited by:</strong> ${item.editedBy}<br>
+                                <strong>Description:</strong> ${item.changeDescription}<br>
+                                <strong>File:</strong> ${item.filePath}
+                            </div>
+                        `;
+                    });
+
+                    resultDiv.innerHTML = historyHtml;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Network error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
